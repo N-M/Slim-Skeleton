@@ -1,18 +1,49 @@
-version: '3.7'
-
-volumes:
-    logs:
-        driver: local
+version: '3.6'
 
 services:
-    slim:
-        image: php:7-alpine
-        working_dir: /var/www
-        command: php -S 0.0.0.0:8080 -t public
-        environment:
-            docker: "true"
-        ports:
-            - 8080:8080
-        volumes:
-            - .:/var/www
-            - logs:/var/www/logs
+  # https://hub.docker.com/_/php/
+  slim-php:
+    environment:
+      - PHP_IDE_CONFIG=serverName=localhost
+    container_name: slim-php
+    build:
+      dockerfile: docker/php/Dockerfile
+      context: .
+      cache_from:
+        - ./docker/php
+    volumes:
+      - .:/srv:rw,cached
+      - /usr/local/lib
+
+  # https://hub.docker.com/_/nginx/
+  slim-nginx:
+    container_name: slim-nginx
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+      cache_from:
+        - ./docker/nginx
+    volumes:
+      - ./public:/srv/public:ro
+    ports:
+      - "127.0.0.1:7030:80"
+  slim-mariadb:
+    image: mariadb:10.6.5
+    container_name: slim-mariadb
+    working_dir: /
+    environment:
+      - MARIADB_DATABASE=slim
+      - MARIADB_USER=user
+      - MARIADB_PASSWORD=password
+      - MARIADB_ROOT_PASSWORD=password
+    volumes:
+      - sql-data:/var/lib/mysql
+    ports:
+      - "33069:3306"
+    expose:
+      - 33069
+    command:
+      'mysqld --innodb-flush-method=fsync --innodb-use-native-aio=0'
+
+volumes:
+  sql-data:

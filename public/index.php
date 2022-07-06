@@ -6,6 +6,10 @@ use App\Application\Handlers\HttpErrorHandler;
 use App\Application\Handlers\ShutdownHandler;
 use App\Application\ResponseEmitter\ResponseEmitter;
 use App\Application\Settings\SettingsInterface;
+use Clockwork\Authentication\NullAuthenticator;
+use Clockwork\Request\LogLevel;
+use Clockwork\Storage\FileStorage;
+use Clockwork\Support\Slim\ClockworkMiddleware;
 use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
 use Slim\Factory\ServerRequestCreatorFactory;
@@ -14,10 +18,6 @@ require __DIR__ . '/../vendor/autoload.php';
 
 // Instantiate PHP-DI ContainerBuilder
 $containerBuilder = new ContainerBuilder();
-
-if (false) { // Should be set to true in production
-	$containerBuilder->enableCompilation(__DIR__ . '/../var/cache');
-}
 
 // Set up settings
 $settings = require __DIR__ . '/../app/settings.php';
@@ -33,10 +33,16 @@ $repositories($containerBuilder);
 
 // Build PHP-DI Container instance
 $container = $containerBuilder->build();
-
+$container->set('clockwork', function () {
+    $clockwork = new Clockwork\Clockwork();
+    $clockwork->storage(new FileStorage('../var/clockwork'));
+//    $clockwork->authenticator(new NullAuthenticator());
+    return $clockwork;
+});
 // Instantiate the app
 AppFactory::setContainer($container);
 $app = AppFactory::create();
+
 $callableResolver = $app->getCallableResolver();
 
 // Register middleware
@@ -46,6 +52,7 @@ $middleware($app);
 // Register routes
 $routes = require __DIR__ . '/../app/routes.php';
 $routes($app);
+
 
 /** @var SettingsInterface $settings */
 $settings = $container->get(SettingsInterface::class);
@@ -75,6 +82,12 @@ $app->addBodyParsingMiddleware();
 // Add Error Middleware
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logError, $logErrorDetails);
 $errorMiddleware->setDefaultErrorHandler($errorHandler);
+
+
+/** @var \Clockwork\Clockwork $clock */
+$clock = $container->get('clockwork');
+$app->add(new ClockworkMiddleware($app, $clock));
+
 
 // Run App & Emit Response
 $response = $app->handle($request);
