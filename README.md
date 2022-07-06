@@ -2,8 +2,10 @@
 
 ## Install the Application
 
-Run this command from the directory in which you want to install your new Slim Framework application. 
+Run this command from the directory in which you want to run app
 
 ```bash
 make up
 ```
+
+Visit http://localhost:7030/
