@@ -25,7 +25,7 @@
         "php": "^7.4 || ^8.0",
         "ext-json": "*",
         "doctrine/annotations": "1.13.2",
-        "doctrine/dbal": "^2.4",
+        "doctrine/dbal": "^3.2",
         "doctrine/orm": "^2.11.0",
         "itsgoingd/clockwork": "^5.1",
         "monolog/monolog": "^2.7",
